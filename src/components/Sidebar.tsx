@@ -93,8 +93,7 @@ export function Sidebar({
                       </SelectLabel>
                       {devicesInCategory.map((device) => (
                         <SelectItem key={device.id} value={device.id}>
-                          <span className="text-muted-foreground mr-1">{device.brand}</span>{" "}
-                          {device.name}
+                          {`${device.brand} - ${device.name}`}
                         </SelectItem>
                       ))}
                     </SelectGroup>

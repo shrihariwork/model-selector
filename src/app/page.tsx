@@ -5,6 +5,7 @@ import { devices, models, TaskType } from "@/data/database";
 import { calculateRequiredRAM } from "@/lib/calculator";
 import { Sidebar } from "@/components/Sidebar";
 import { ModelCard } from "@/components/ModelCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Bot } from "lucide-react";
 
 export default function Home() {
@@ -49,11 +50,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-            <Bot className="w-5 h-5" />
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
+              <Bot className="w-5 h-5" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">Edge AI Matcher</h1>
           </div>
-          <h1 className="text-xl font-bold tracking-tight">Edge AI Matcher</h1>
+          <ThemeToggle />
         </div>
       </header>
 
