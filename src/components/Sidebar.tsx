@@ -1,12 +1,14 @@
 "use client";
 
-import { Device, devices, TaskType } from "@/data/database";
+import { Device, DeviceCategory, devices, TaskType } from "@/data/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -24,6 +26,26 @@ interface SidebarProps {
   onTaskToggle: (task: TaskType) => void;
 }
 
+// Group devices by category
+function groupDevicesByCategory(
+  deviceList: Device[]
+): Record<DeviceCategory, Device[]> {
+  const groups: Partial<Record<DeviceCategory, Device[]>> = {};
+  for (const device of deviceList) {
+    if (!groups[device.category]) groups[device.category] = [];
+    groups[device.category]!.push(device);
+  }
+  return groups as Record<DeviceCategory, Device[]>;
+}
+
+const categoryOrder: DeviceCategory[] = [
+  "Micro-Edge & TinyML",
+  "General Purpose Edge & SBCs",
+  "High-Performance Edge Accelerators",
+  "AI PC / Client Edge",
+  "Custom",
+];
+
 export function Sidebar({
   selectedDeviceId,
   onDeviceChange,
@@ -34,8 +56,15 @@ export function Sidebar({
 }: SidebarProps) {
   const selectedDevice = devices.find((d) => d.id === selectedDeviceId) || devices[0];
   const isCustom = selectedDeviceId === "custom-device";
+  const groupedDevices = groupDevicesByCategory(devices);
 
   const taskOptions: TaskType[] = ["Vision", "NLP", "Audio"];
+
+  const formatRam = (gb: number) => {
+    if (gb >= 1) return `${gb} GB`;
+    if (gb >= 0.001) return `${Math.round(gb * 1024)} MB`;
+    return `${Math.round(gb * 1024 * 1024)} KB`;
+  };
 
   return (
     <div className="w-full md:w-80 flex flex-col gap-6">
@@ -49,16 +78,28 @@ export function Sidebar({
         <CardContent className="space-y-6">
           <div className="space-y-3">
             <Label>Select Edge Device</Label>
-            <Select value={selectedDeviceId} onValueChange={onDeviceChange}>
+            <Select value={selectedDeviceId} onValueChange={(val) => { if (val) onDeviceChange(val); }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a device" />
               </SelectTrigger>
-              <SelectContent>
-                {devices.map((device) => (
-                  <SelectItem key={device.id} value={device.id}>
-                    {device.name}
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-80">
+                {categoryOrder.map((category) => {
+                  const devicesInCategory = groupedDevices[category];
+                  if (!devicesInCategory || devicesInCategory.length === 0) return null;
+                  return (
+                    <SelectGroup key={category}>
+                      <SelectLabel className="text-xs text-muted-foreground uppercase tracking-wider font-semibold px-2 py-1.5">
+                        {category}
+                      </SelectLabel>
+                      {devicesInCategory.map((device) => (
+                        <SelectItem key={device.id} value={device.id}>
+                          <span className="text-muted-foreground mr-1">{device.brand}</span>{" "}
+                          {device.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -70,9 +111,7 @@ export function Sidebar({
                   <HardDrive className="w-4 h-4" /> RAM
                 </span>
                 <span className="font-medium text-sm">
-                  {selectedDevice.ramGB >= 1
-                    ? `${selectedDevice.ramGB} GB`
-                    : `${selectedDevice.ramGB * 1000} MB`}
+                  {formatRam(selectedDevice.ramGB)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -87,10 +126,20 @@ export function Sidebar({
                 <span className="text-sm text-muted-foreground flex items-center gap-2">
                   <Cpu className="w-4 h-4" /> Compute
                 </span>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap justify-end">
                   {selectedDevice.computeType.map((ct) => (
                     <Badge key={ct} variant="secondary" className="text-xs">
                       {ct}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-muted-foreground shrink-0">Formats</span>
+                <div className="flex gap-1 flex-wrap justify-end ml-2">
+                  {selectedDevice.supportedFormats.map((fmt) => (
+                    <Badge key={fmt} variant="outline" className="text-xs">
+                      {fmt}
                     </Badge>
                   ))}
                 </div>
@@ -106,7 +155,7 @@ export function Sidebar({
                     <HardDrive className="w-4 h-4" /> Custom RAM
                   </Label>
                   <span className="font-medium text-sm text-primary">
-                    {customRamGB >= 1 ? `${customRamGB.toFixed(1)} GB` : `${Math.round(customRamGB * 1000)} MB`}
+                    {formatRam(customRamGB)}
                   </span>
                 </div>
                 <Slider
@@ -114,7 +163,7 @@ export function Sidebar({
                   max={32}
                   step={0.05}
                   value={[customRamGB]}
-                  onValueChange={(vals) => onCustomRamChange(vals[0])}
+                  onValueChange={(vals) => onCustomRamChange(Array.isArray(vals) ? vals[0] : (vals as unknown as number))}
                   className="py-2"
                 />
               </div>
